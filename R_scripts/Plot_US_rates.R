@@ -32,3 +32,37 @@ murders |> ggplot(aes(population, total, label = abb)) +
   geom_text(nudge_y = 0.1) +
   scale_x_log10() +
   scale_y_log10()
+
+# Now minimal version
+murders |> ggplot(aes(population, total, label = abb)) +
+  geom_point(aes(color = region), size = 3) +
+  geom_text(nudge_y = 0.1) +
+  scale_x_log10() +
+  scale_y_log10() +
+  theme_minimal()
+
+# Add titles
+# Now minimal version
+murders |> ggplot(aes(population, total, label = abb)) +
+  geom_point(aes(color = region), size = 3) +
+  geom_text(nudge_y = 0.1) +
+  scale_x_log10() +
+  scale_y_log10() +
+  theme_minimal() + 
+  labs(title = "US gun murders in 2010")
+
+# Calculate overall average murders per person population
+r <- murders |> 
+  summarize(rate = sum(total)/sum(population)) |> 
+  pull(rate)
+
+#Add murder rate as line
+#CURRENT ISSUE - abline not appearing on graph - probably due to messing with logs
+murders |> ggplot(aes(population, total, label = abb)) +
+  geom_point(aes(color = region), size = 3) +
+  geom_text(nudge_y = 0.1) +
+  geom_abline(intercept=10, slope=30.01, lty=2, color="black") +
+  scale_x_log10() +
+  scale_y_log10() +
+  theme_minimal() + 
+  labs(title = "US gun murders in 2010")
