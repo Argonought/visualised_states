@@ -56,13 +56,86 @@ r <- murders |>
   summarize(rate = sum(total)/sum(population)) |> 
   pull(rate)
 
+# #Add murder rate as line
+# murders |> ggplot(aes(population, total, label = abb)) +
+#   geom_point(aes(color = region), size = 3) +
+#   geom_text(nudge_y = 0.1) +
+#   geom_abline(slope=log(r), lty=2, color="black") +
+#   scale_x_log10() +
+#   scale_y_log10() +
+#   theme_minimal() + 
+#   labs(title = "US gun murders in 2010")
+# #WHERE'S MY LINE -line not visible
+
+# Do the book version as sense check:
+r2 <- murders |> 
+  summarize(rate = sum(total)/sum(population)*10^6) |> 
+  pull(rate)
+
+murders %>%
+  ggplot(aes(population/10^6, total, label = abb)) +
+  geom_point(aes(color = region), size = 3) +
+  geom_text(nudge_x = 1.5) +
+  geom_abline(intercept = log10(r2), lty = 2, color = "darkgrey")
+##This does not give what we want - gives a line with gradient 1
+#and intercept near 0 (1.48)
+
+#So switch - use log10(r) as the slope, and intercept as 0
+# (no people = no deaths, hopefully ;) 
+murders %>%
+  ggplot(aes(population/10^6, total, label = abb)) +
+  geom_point(aes(color = region), size = 3) +
+  geom_text(nudge_x = 1.5) +
+  geom_abline(slope = r2, intercept = 0, lty = 2, color = "darkgrey")
+
+# NICE - got there. Now add in log10 for axes (and intercept):
+murders %>%
+  ggplot(aes(population/10^6, total, label = abb)) +
+  geom_point(aes(color = region), size = 3) +
+  geom_text(nudge_x = 0.05) +
+  geom_abline(slope = log10(r2), intercept = 1,
+              lty = 2, color = "darkgrey", linewidth=1.5) +
+  scale_x_log10() +
+  scale_y_log10()+
+  theme_minimal()
+#NOTE - intercept must be 1 as log10(0) = 1
+
+#OK so let's go back to my slightly altered graph
+#We're using r not r2 - these are the same but r2 had pop/10^6
+
 #Add murder rate as line
-#CURRENT ISSUE - abline not appearing on graph - probably due to messing with logs
-murders |> ggplot(aes(population, total, label = abb)) +
+murders %>%
+  ggplot(aes(population, total, label = abb)) +
   geom_point(aes(color = region), size = 3) +
   geom_text(nudge_y = 0.1) +
-  geom_abline(intercept=10, slope=30.01, lty=2, color="black") +
+  theme_minimal()  +
+  labs(title = "US gun murders in 2010") +
+  xlim(0, NA) +
+  ylim(0, NA) +
+  geom_abline(slope=r, intercept=0, lty=2, color="black") 
+#FIXED - key thing was making sure origin is plotted using xlim
+#however this also removes the log scale
+
+#Also tried putting axes on log scale and changing intercept to 
+#small (non-zero) number 0.0001, but this didn't work
+murders %>%
+  ggplot(aes(population, total, label = abb)) +
+  geom_point(aes(color = region), size = 3) +
+  geom_text(nudge_y = 0.1) +
+  theme_minimal()  +
+  geom_abline(slope=r, intercept=0.0001, lty=2, color="black") +
+  labs(title = "US gun murders in 2010") +
   scale_x_log10() +
-  scale_y_log10() +
-  theme_minimal() + 
-  labs(title = "US gun murders in 2010")
+  scale_y_log10() 
+
+# The below works, by transforming the co-ordinates instead!!!
+#Seems to relate to this (unresolved) 
+# bug https://github.com/tidyverse/ggplot2/issues/46
+murders %>%
+  ggplot(aes(population, total, label = abb)) +
+  geom_point(aes(color = region), size = 3) +
+  geom_text(nudge_y = 0.1) +
+  theme_minimal()  +
+  geom_abline(slope=r, intercept=0.0001, lty=2, color="black") +
+  labs(title = "US gun murders in 2010") +
+  coord_trans(y="log10", x="log10")
