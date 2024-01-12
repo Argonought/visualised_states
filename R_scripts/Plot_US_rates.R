@@ -68,8 +68,8 @@ r <- murders |>
 # #WHERE'S MY LINE -line not visible
 
 # Do the book version as sense check:
-r2 <- murders |> 
-  summarize(rate = sum(total)/sum(population)*10^6) |> 
+r2 <- murders %>%
+  summarize(rate = sum(total)/sum(population)*10^6) %>%
   pull(rate)
 
 murders %>%
@@ -139,3 +139,89 @@ murders %>%
   geom_abline(slope=r, intercept=0.0001, lty=2, color="black") +
   labs(title = "US gun murders in 2010") +
   coord_trans(y="log10", x="log10")
+
+
+# Final version - let's learn from the bug and transform the data instead
+
+#Calculate murder rate per m
+
+murders %>%
+  ggplot(aes(population/10^6, total, label = abb)) +
+  geom_point(aes(color = region), size = 3) +
+  geom_text(nudge_y = 0.1) +
+  theme_minimal()  +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_abline(slope=log10(r2), intercept=1, lty=2, color="black") +
+  labs(title = "US gun murders in 2010") +
+  xlab("State population (millions)") +
+  ylab("Total gun murders")
+
+murders %>%
+  ggplot(aes(population, total, label = abb)) +
+  geom_point(aes(color = region), size = 3) +
+  geom_text(nudge_y = 0.1) +
+  theme_minimal()  +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_abline(slope=r, intercept=1, lty=2, color="black") +
+  labs(title = "US gun murders in 2010") +
+  xlab("State population (millions)") +
+  ylab("Total gun murders")
+
+
+#Calculate murder rate by region
+murd_reg <- murders %>%
+  group_by(region) %>%
+  mutate(regional_murder_rate = sum(total)/sum(population)*10^6)
+
+r_reg <- unique(murd_reg$regional_murder_rate)
+
+
+#THIS GRAPH makes average rate lines for each region
+#Need to update with hex colours to make colours match regions
+#Not log
+murders %>%
+  ggplot(aes(population/10^6, total, label = abb)) +
+  geom_point(aes(color = region), size = 3) +
+  geom_text(nudge_y = 0.1) +
+  theme_minimal()  +
+  geom_smooth(method = "lm") +
+  geom_abline(slope=r_reg, intercept=c(1,1,1,1), lty=2, 
+              # color=c("green", "purple", "red", "blue")) +
+              color=c(2, 4, 1, 3)) +
+  labs(title = "US gun murders in 2010") +
+  xlab("State population (millions)") +
+  ylab("Total gun murders")
+
+#THIS GRAPH makes average rate lines for each region
+#Need to update with hex colours to make colours match regions
+murders %>%
+  ggplot(aes(population/10^6, total, label = abb)) +
+  geom_point(aes(color = region), size = 3) +
+  geom_text(nudge_y = 0.1) +
+  theme_minimal()  +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_abline(slope=log10(r_reg), intercept=c(1,1,1,1), lty=2, 
+              # color=c("green", "purple", "red", "blue")) +
+              color=c(2, 4, 1, 3)) +
+  labs(title = "US gun murders in 2010") +
+  xlab("State population (millions)") +
+  ylab("Total gun murders")
+
+#THIS GRAPH makes average rate lines for each region
+#Now try to do it using "lm" and geom smooth
+#Not log
+murders %>%
+  ggplot(aes(population/10^6, total, label = abb)) +
+  geom_point(aes(color = region), size = 3) +
+  geom_text(nudge_y = 0.1) +
+  theme_minimal()  +
+  geom_smooth(method = "lm", 
+              mapping = aes(population/10^6, total, color=region),
+              ) + # need to remove ribbons to plot on single graph
+  # facet_grid(cols = ) + need to make it split by region
+  labs(title = "US gun murders in 2010") +
+  xlab("State population (millions)") +
+  ylab("Total gun murders")
