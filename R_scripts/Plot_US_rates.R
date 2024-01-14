@@ -1,6 +1,8 @@
 # Script to plot US murder rates by state
 library(dslabs)
 library(tidyverse)
+library(maps)
+library(viridis)
 
 # Check structure of murder data
 head(murders)
@@ -216,12 +218,63 @@ murders %>%
 murders %>%
   ggplot(aes(population/10^6, total, label = abb)) +
   geom_point(aes(color = region), size = 3) +
-  geom_text(nudge_y = 0.1) +
+  geom_text(nudge_y = 0.5) +
   theme_minimal()  +
   geom_smooth(method = "lm", 
-              mapping = aes(population/10^6, total, color=region),
-              ) + # need to remove ribbons to plot on single graph
+              mapping = aes(population/10^6, total, color=region,),
+              se=FALSE) + # need to remove ribbons to plot on single graph
   # facet_grid(cols = ) + need to make it split by region
   labs(title = "US gun murders in 2010") +
   xlab("State population (millions)") +
   ylab("Total gun murders")
+
+#THIS GRAPH makes average rate lines for each region
+#Now try to do it using "lm" and geom smooth
+# log
+murders %>%
+  ggplot(aes(population/10^6, total, label = abb)) +
+  geom_point(aes(color = region), size = 3) +
+  #geom_text(nudge_y = 0.1) +
+  theme_minimal()  +
+  geom_smooth(method = "lm", 
+              mapping = aes(color=region),
+              se=FALSE) + # need to remove ribbons to plot on single graph
+  facet_grid(cols = vars(region), margins=TRUE) + # need to make it split by region
+  labs(title = "US gun murders in 2010") +
+  scale_x_log10() +
+  scale_y_log10() +
+  xlab("Log10(State population [millions])") +
+  ylab("Log10(Total gun murders)")
+
+## Nice, now to try and make a chloropleth map showing gun murder rate
+# Retrieve the states map data and merge with crime data
+#Make dataset of USA states
+states_map <- map_data("state") # note that state names are in lower case
+
+#Let's calculate murder rate for each state
+murders$rate <- murders$total/murders$population
+murders$ratebymil <- murders$total/murders$population*10^6
+
+#we will need to use state names to match murder rate to state names in map data
+murders$lowcasestate <- tolower(murders$state)
+
+#Need the same col name to join by that variable, so make additional column
+#in states map (region means different things in states_map and murders)
+states_map$lowcasestate <- tolower(states_map$region)
+
+#Now add the murders data to the state map data, using lower case state name
+#to specify which rows murder data is entered on
+murders_map <- left_join(states_map, murders, by = "lowcasestate")
+
+# Map with murder rate per million people
+ggplot(murders_map, aes(long, lat, group = group))+
+  geom_polygon(aes(fill = ratebymil), color = "white")+
+  scale_fill_viridis_c(option = "C") +
+  theme_minimal() +
+  labs(fill = "Gun murders \nper million people",
+       title = "US gun murders in 2010") +
+  xlab("Longitude") +
+  ylab("Latitude")
+
+#TODO - change colour scale so high rate is red, low rate is white/pink
+  
