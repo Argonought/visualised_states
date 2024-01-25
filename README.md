@@ -13,7 +13,7 @@ Code to produce the graphs below can be found in ./Plot_US_rates.R
 ![What is this](USA_gunmurder_map_final.png)
 
 ## Lessons learned
-1) R now has a native pipe function
+1) R now has a native pipe function ("|>")
    #e.g. 
 murders %>% head(.) #works
 but
